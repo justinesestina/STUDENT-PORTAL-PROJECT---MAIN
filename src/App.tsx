@@ -7,7 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
 
-// Pages
+// Student Pages
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -16,9 +16,17 @@ import Grades from "./pages/Grades";
 import Schedule from "./pages/Schedule";
 import Assignments from "./pages/Assignments";
 import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
+
+// Admin Pages
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
-import NotFound from "./pages/NotFound";
+import AdminStudents from "./pages/admin/AdminStudents";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
+import AdminTimetable from "./pages/admin/AdminTimetable";
+import AdminAttendance from "./pages/admin/AdminAttendance";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +99,54 @@ const App = () => (
               element={
                 <AdminProtectedRoute>
                   <AdminDashboard />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/students"
+              element={
+                <AdminProtectedRoute>
+                  <AdminStudents />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/courses"
+              element={
+                <AdminProtectedRoute>
+                  <AdminCourses />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/announcements"
+              element={
+                <AdminProtectedRoute>
+                  <AdminAnnouncements />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/timetable"
+              element={
+                <AdminProtectedRoute>
+                  <AdminTimetable />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/attendance"
+              element={
+                <AdminProtectedRoute>
+                  <AdminAttendance />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <AdminProtectedRoute>
+                  <AdminSettings />
                 </AdminProtectedRoute>
               }
             />

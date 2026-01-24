@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   Home, 
@@ -9,7 +9,9 @@ import {
   User,
   Search,
   Bell,
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +22,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -41,6 +44,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -59,20 +63,90 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
     return "ST";
   };
 
+  const MobileNav = () => (
+    <div className="flex flex-col h-full">
+      <div className="p-4 border-b flex items-center justify-between">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+            <GraduationCap className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-bold">ZAP Gateway</span>
+        </Link>
+      </div>
+      
+      <nav className="flex-1 p-4 space-y-1">
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t">
+        <div className="flex items-center gap-3 mb-4">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={profile?.avatar_url || undefined} />
+            <AvatarFallback className="bg-muted text-muted-foreground">
+              {getInitials()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium truncate">{profile?.full_name || "Student"}</p>
+            <p className="text-xs text-muted-foreground truncate">{profile?.student_number}</p>
+          </div>
+        </div>
+        <Button 
+          variant="outline" 
+          className="w-full justify-start" 
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 w-full border-b bg-card shadow-sm">
         <div className="container flex h-16 items-center justify-between px-4">
+          {/* Mobile Menu Button */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-72">
+              <MobileNav />
+            </SheetContent>
+          </Sheet>
+
           {/* Logo */}
           <Link to="/dashboard" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
               <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold">ZAP Gateway</span>
+            <span className="text-lg font-bold hidden sm:inline">ZAP Gateway</span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links - Desktop */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
@@ -81,22 +155,22 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                    "flex items-center gap-2 px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                   )}
                 >
                   <item.icon className="h-4 w-4" />
-                  {item.label}
+                  <span className="hidden lg:inline">{item.label}</span>
                 </Link>
               );
             })}
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" className="hidden md:flex">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <Button variant="ghost" size="icon" className="hidden sm:flex">
               <Search className="h-5 w-5" />
             </Button>
             
@@ -126,9 +200,9 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
                       {getInitials()}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{profile?.full_name || "Student"}</span>
-                    <span className="text-xs text-muted-foreground">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium truncate">{profile?.full_name || "Student"}</span>
+                    <span className="text-xs text-muted-foreground truncate">
                       {profile?.student_number}
                     </span>
                   </div>
@@ -152,7 +226,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 px-4">
+      <main className="container py-4 sm:py-6 px-4">
         {children}
       </main>
     </div>
