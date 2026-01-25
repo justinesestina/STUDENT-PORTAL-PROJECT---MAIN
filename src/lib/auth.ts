@@ -1,8 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Admin credentials (hardcoded as per requirements)
-const ADMIN_USERNAME = "zapadmin";
-const ADMIN_PASSWORD = "adminzap25";
+// Admin credentials (updated as per requirements)
+const ADMIN_USERNAME = "zap.gateaway";
+const ADMIN_PASSWORD = "minadzap25";
 
 export interface StudentProfile {
   id: string;

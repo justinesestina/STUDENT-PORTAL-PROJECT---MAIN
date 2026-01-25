@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { GraduationCap, Loader2, HelpCircle, PlayCircle } from "lucide-react";
+import { Loader2, HelpCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { studentLogin } from "@/lib/auth";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -37,21 +39,31 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Theme Toggle - Top Right */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
+      <Card className="w-full max-w-md shadow-2xl border-0 animate-scale-in relative z-10">
         <CardContent className="pt-8 pb-6">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent">
-                <GraduationCap className="h-7 w-7 text-accent-foreground" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-accent">ZAP</span>
-                <span className="text-xl font-bold text-primary">GATEWAY</span>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">Cavite State University - Imus Campus</p>
+            <img 
+              src={logo} 
+              alt="ZAP Gateway Academy" 
+              className="w-28 h-28 mb-4 drop-shadow-lg animate-fade-in"
+            />
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
+              ZAP GATEWAY ACADEMY
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">Student Portal</p>
           </div>
 
           {/* Login Form */}
@@ -66,7 +78,7 @@ const Login: React.FC = () => {
                 placeholder="Enter your student number"
                 value={studentNumber}
                 onChange={(e) => setStudentNumber(e.target.value)}
-                className="h-11"
+                className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 disabled={loading}
               />
             </div>
@@ -81,7 +93,7 @@ const Login: React.FC = () => {
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11"
+                className="h-11 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                 disabled={loading}
               />
             </div>
@@ -89,7 +101,7 @@ const Login: React.FC = () => {
             <div className="text-right">
               <Link 
                 to="/forgot-password" 
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-primary hover:underline transition-colors"
               >
                 Forgot Password?
               </Link>
@@ -97,7 +109,7 @@ const Login: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full h-11 bg-primary hover:bg-primary/90"
+              className="w-full h-11 bg-primary hover:bg-primary/90 transition-all duration-300 font-semibold"
               disabled={loading}
             >
               {loading ? (
@@ -115,7 +127,7 @@ const Login: React.FC = () => {
           <div className="mt-6 text-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account yet?{" "}
-              <Link to="/register" className="text-primary font-medium hover:underline">
+              <Link to="/register" className="text-primary font-medium hover:underline transition-colors">
                 Register here
               </Link>
             </p>
@@ -123,14 +135,24 @@ const Login: React.FC = () => {
 
           {/* Footer Links */}
           <div className="mt-6 flex items-center justify-center gap-4 text-sm text-muted-foreground">
-            <Link to="/support" className="flex items-center gap-1 hover:text-foreground">
+            <Link to="/support" className="flex items-center gap-1 hover:text-foreground transition-colors">
               <HelpCircle className="h-4 w-4" />
               Support
             </Link>
-            <span>|</span>
-            <Link to="/walkthrough" className="flex items-center gap-1 hover:text-foreground">
+            <span className="text-border">|</span>
+            <Link to="/walkthrough" className="flex items-center gap-1 hover:text-foreground transition-colors">
               <PlayCircle className="h-4 w-4" />
               Walkthrough
+            </Link>
+          </div>
+
+          {/* Admin Link */}
+          <div className="mt-4 text-center">
+            <Link 
+              to="/admin/login" 
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Admin Portal →
             </Link>
           </div>
         </CardContent>
