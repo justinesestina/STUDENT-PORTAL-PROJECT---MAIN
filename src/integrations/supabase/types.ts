@@ -114,6 +114,57 @@ export type Database = {
           },
         ]
       }
+      attendance: {
+        Row: {
+          course_id: string
+          created_at: string | null
+          date: string
+          id: string
+          marked_by: string | null
+          remarks: string | null
+          status: string
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          course_id: string
+          created_at?: string | null
+          date?: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          status?: string
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          course_id?: string
+          created_at?: string | null
+          date?: string
+          id?: string
+          marked_by?: string | null
+          remarks?: string | null
+          status?: string
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           code: string
