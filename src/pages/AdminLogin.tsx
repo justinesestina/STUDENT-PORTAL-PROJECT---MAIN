@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { adminLogin, setAdminAuthenticated } from "@/lib/auth";
 import { toast } from "sonner";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -39,17 +41,33 @@ const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-accent/10 rounded-full blur-3xl" />
+      </div>
+
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+
+      <Card className="w-full max-w-md shadow-2xl animate-scale-in relative z-10">
+        <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-              <Shield className="h-8 w-8 text-primary" />
-            </div>
+            <img 
+              src={logo} 
+              alt="ZAP Gateway Academy" 
+              className="w-20 h-20 drop-shadow-lg"
+            />
           </div>
-          <CardTitle className="text-2xl">Admin Portal</CardTitle>
+          <CardTitle className="text-2xl flex items-center justify-center gap-2">
+            <Shield className="h-6 w-6 text-primary" />
+            Admin Portal
+          </CardTitle>
           <CardDescription>
-            ZAP Gateway Administration System
+            ZAP Gateway Academy Administration
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -82,7 +100,7 @@ const AdminLogin: React.FC = () => {
 
             <Button
               type="submit"
-              className="w-full h-11"
+              className="w-full h-11 font-semibold"
               disabled={loading}
             >
               {loading ? (

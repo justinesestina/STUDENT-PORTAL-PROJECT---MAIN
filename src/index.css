@@ -4,130 +4,133 @@
 
 @layer base {
   :root {
-    /* ZAP Gateway Design System - Light Mode */
-    --background: 225 20% 96%;
-    --foreground: 222 47% 11%;
+    /* ZAP Gateway Academy Design System - Light Mode */
+    /* Teal/Cyan primary with Gold accents inspired by logo */
+    --background: 200 20% 97%;
+    --foreground: 210 50% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 210 50% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 210 50% 10%;
 
-    /* Primary - Emerald Green */
-    --primary: 152 76% 36%;
+    /* Primary - Teal/Cyan from logo */
+    --primary: 180 70% 35%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary */
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 200 30% 94%;
+    --secondary-foreground: 210 50% 10%;
 
     /* Muted */
-    --muted: 210 40% 96%;
+    --muted: 200 30% 94%;
     --muted-foreground: 215 16% 47%;
 
-    /* Accent - Gold/Yellow */
-    --accent: 45 93% 47%;
-    --accent-foreground: 222 47% 11%;
+    /* Accent - Gold from logo */
+    --accent: 45 80% 50%;
+    --accent-foreground: 210 50% 10%;
 
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success */
-    --success: 152 76% 36%;
+    --success: 160 60% 40%;
     --success-foreground: 0 0% 100%;
 
     /* Warning */
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 210 50% 10%;
 
     /* Info */
-    --info: 217 91% 60%;
+    --info: 200 90% 50%;
     --info-foreground: 0 0% 100%;
 
     /* Border & Input */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 152 76% 36%;
+    --border: 200 25% 88%;
+    --input: 200 25% 88%;
+    --ring: 180 70% 35%;
 
     --radius: 0.75rem;
 
-    /* Sidebar */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 152 76% 36%;
+    /* Sidebar - Dark teal navy */
+    --sidebar-background: 200 50% 15%;
+    --sidebar-foreground: 200 20% 95%;
+    --sidebar-primary: 180 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 222 47% 11%;
-    --sidebar-border: 214 32% 91%;
-    --sidebar-ring: 152 76% 36%;
+    --sidebar-accent: 200 40% 25%;
+    --sidebar-accent-foreground: 200 20% 95%;
+    --sidebar-border: 200 40% 20%;
+    --sidebar-ring: 180 70% 45%;
 
     /* Charts */
-    --chart-1: 152 76% 36%;
-    --chart-2: 217 91% 60%;
-    --chart-3: 45 93% 47%;
+    --chart-1: 180 70% 35%;
+    --chart-2: 200 90% 50%;
+    --chart-3: 45 80% 50%;
     --chart-4: 280 65% 60%;
     --chart-5: 0 84% 60%;
 
     /* Grade colors */
-    --grade-a: 152 76% 36%;
-    --grade-b: 217 91% 60%;
-    --grade-c: 45 93% 47%;
+    --grade-a: 160 60% 40%;
+    --grade-b: 200 90% 50%;
+    --grade-c: 45 80% 50%;
     --grade-d: 25 95% 53%;
     --grade-f: 0 84% 60%;
 
     /* Progress bar backgrounds */
-    --progress-bg: 210 40% 96%;
-    --progress-fill: 222 47% 11%;
+    --progress-bg: 200 30% 94%;
+    --progress-fill: 180 70% 35%;
   }
 
   .dark {
-    --background: 222 47% 8%;
-    --foreground: 210 40% 98%;
+    --background: 210 50% 8%;
+    --foreground: 200 20% 95%;
 
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 45% 12%;
+    --card-foreground: 200 20% 95%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 45% 12%;
+    --popover-foreground: 200 20% 95%;
 
-    --primary: 152 76% 45%;
+    --primary: 180 65% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 210 40% 18%;
+    --secondary-foreground: 200 20% 95%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 210 40% 18%;
+    --muted-foreground: 200 20% 65%;
 
-    --accent: 45 93% 47%;
-    --accent-foreground: 222 47% 11%;
+    --accent: 45 80% 50%;
+    --accent-foreground: 210 50% 10%;
 
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 63% 45%;
+    --destructive-foreground: 200 20% 95%;
 
-    --success: 152 76% 36%;
+    --success: 160 60% 40%;
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 210 50% 10%;
 
-    --info: 217 91% 60%;
+    --info: 200 90% 50%;
     --info-foreground: 0 0% 100%;
 
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 152 76% 45%;
+    --border: 210 40% 20%;
+    --input: 210 40% 20%;
+    --ring: 180 65% 45%;
 
-    --sidebar-background: 222 47% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 152 76% 45%;
+    --sidebar-background: 210 50% 6%;
+    --sidebar-foreground: 200 20% 95%;
+    --sidebar-primary: 180 65% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 17%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
-    --sidebar-ring: 152 76% 45%;
+    --sidebar-accent: 210 40% 15%;
+    --sidebar-accent-foreground: 200 20% 95%;
+    --sidebar-border: 210 40% 15%;
+    --sidebar-ring: 180 65% 45%;
+
+    --progress-fill: 180 65% 45%;
   }
 }
 
@@ -148,7 +151,7 @@
 
 @layer components {
   .stat-card {
-    @apply bg-card rounded-xl border p-6 shadow-sm transition-all hover:shadow-md;
+    @apply bg-card rounded-xl border p-6 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.02];
   }
 
   .progress-bar {
@@ -162,7 +165,7 @@
   }
 
   .nav-link {
-    @apply flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all;
+    @apply flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200;
     @apply text-muted-foreground hover:text-foreground hover:bg-secondary;
   }
 
@@ -175,23 +178,23 @@
   }
 
   .grade-a {
-    @apply bg-green-100 text-green-700;
+    @apply bg-success/20 text-success;
   }
 
   .grade-b {
-    @apply bg-blue-100 text-blue-700;
+    @apply bg-info/20 text-info;
   }
 
   .grade-c {
-    @apply bg-yellow-100 text-yellow-700;
+    @apply bg-warning/20 text-warning;
   }
 
   .grade-d {
-    @apply bg-orange-100 text-orange-700;
+    @apply bg-accent/20 text-accent;
   }
 
   .grade-f {
-    @apply bg-red-100 text-red-700;
+    @apply bg-destructive/20 text-destructive;
   }
 
   .event-badge {
@@ -199,23 +202,65 @@
   }
 
   .timetable-slot {
-    @apply p-3 rounded-lg border-l-4 text-sm;
+    @apply p-3 rounded-lg border-l-4 text-sm transition-all duration-200 hover:shadow-md;
   }
 
   .timetable-slot.lecture {
-    @apply bg-blue-50 border-blue-500 text-blue-900;
+    @apply bg-info/10 border-info;
   }
 
   .timetable-slot.lab {
-    @apply bg-purple-50 border-purple-500 text-purple-900;
+    @apply bg-primary/10 border-primary;
   }
 
   .timetable-slot.study {
-    @apply bg-green-50 border-green-500 text-green-900;
+    @apply bg-success/10 border-success;
   }
 
   .timetable-slot.office {
-    @apply bg-orange-50 border-orange-500 text-orange-900;
+    @apply bg-accent/10 border-accent;
+  }
+
+  /* Course cards with colored left borders */
+  .course-card {
+    @apply bg-card rounded-xl border p-5 transition-all duration-300 hover:shadow-lg border-l-4;
+  }
+
+  .course-card.teal {
+    @apply border-l-primary;
+  }
+
+  .course-card.gold {
+    @apply border-l-accent;
+  }
+
+  .course-card.blue {
+    @apply border-l-info;
+  }
+
+  .course-card.green {
+    @apply border-l-success;
+  }
+
+  /* Homework/Assignment status badges */
+  .status-badge {
+    @apply px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-badge.completed {
+    @apply bg-success/20 text-success;
+  }
+
+  .status-badge.in-progress {
+    @apply bg-info/20 text-info;
+  }
+
+  .status-badge.not-started {
+    @apply bg-muted text-muted-foreground;
+  }
+
+  .status-badge.upcoming {
+    @apply bg-warning/20 text-warning;
   }
 }
 
@@ -225,11 +270,19 @@
   }
 
   .animate-slide-up {
-    animation: slideUp 0.3s ease-out;
+    animation: slideUp 0.4s ease-out;
   }
 
   .animate-slide-down {
     animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
   }
 
   @keyframes fadeIn {
@@ -238,12 +291,22 @@
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes slideDown {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 }
