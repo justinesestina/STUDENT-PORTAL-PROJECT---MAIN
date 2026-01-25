@@ -41,30 +41,30 @@ export const setAdminAuthenticated = (value: boolean): void => {
 };
 
 // Student authentication using Supabase
+const normalizeStudentNumber = (studentNumber: string) => studentNumber.trim();
+
+// We keep email completely internal for auth. Students still login with Student Number + Password only.
+const studentAuthEmail = (studentNumber: string) => {
+  const normalized = normalizeStudentNumber(studentNumber);
+  // Deterministic, unique per student_number, and does not require reading profiles before login.
+  return `${normalized.toLowerCase()}@zapgateway.internal`;
+};
+
 export const studentLogin = async (
   studentNumber: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    // First, find the profile with this student number to get the email
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("student_number", studentNumber)
-      .single();
+    const email = studentAuthEmail(studentNumber);
 
-    if (profileError || !profile) {
-      return { success: false, error: "Student number not found" };
-    }
-
-    // Login with the email associated with the student number
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email: profile.email,
-      password: password,
+      email,
+      password,
     });
 
     if (authError) {
-      return { success: false, error: "Invalid password" };
+      // Do not reveal whether student number exists.
+      return { success: false, error: "Invalid student number or password" };
     }
 
     return { success: true };
@@ -84,65 +84,26 @@ export const studentRegister = async (data: {
   course?: string;
 }): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Check if student number already exists
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("student_number", data.studentNumber)
-      .single();
-
-    if (existing) {
-      return { success: false, error: "Student number already registered" };
-    }
-
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+    // Registration is handled server-side to avoid RLS issues and ensure
+    // student_number -> auth identity mapping is always created correctly.
+    const { data: res, error } = await supabase.functions.invoke("student-register", {
+      body: {
+        studentNumber: normalizeStudentNumber(data.studentNumber),
+        fullName: data.fullName,
+        email: data.email,
+        mobileNumber: data.mobileNumber,
+        birthday: data.birthday,
+        password: data.password,
+        course: data.course,
       },
     });
 
-    if (authError) {
-      return { success: false, error: authError.message };
+    if (error) {
+      return { success: false, error: error.message };
     }
 
-    if (!authData.user) {
-      return { success: false, error: "Failed to create user account" };
-    }
-
-    // Parse name into first and last
-    const nameParts = data.fullName.trim().split(" ");
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
-
-    // Create profile
-    const { error: profileError } = await supabase.from("profiles").insert({
-      user_id: authData.user.id,
-      student_number: data.studentNumber,
-      full_name: data.fullName,
-      first_name: firstName,
-      last_name: lastName,
-      email: data.email,
-      mobile_number: data.mobileNumber,
-      birthday: data.birthday,
-      course: data.course || null,
-    });
-
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
-      return { success: false, error: "Failed to create profile" };
-    }
-
-    // Assign student role
-    const { error: roleError } = await supabase.from("user_roles").insert({
-      user_id: authData.user.id,
-      role: "student",
-    });
-
-    if (roleError) {
-      console.error("Role assignment error:", roleError);
+    if (!res?.success) {
+      return { success: false, error: res?.error || "Registration failed" };
     }
 
     return { success: true };
