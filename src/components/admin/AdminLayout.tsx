@@ -10,7 +10,9 @@ import {
   LayoutDashboard,
   UserCheck,
   Menu,
-  BarChart3
+  CreditCard,
+  Brain,
+  Library
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +33,9 @@ const mainNav = [
 const managementNav = [
   { href: "/admin/announcements", label: "Announcements", icon: Bell },
   { href: "/admin/attendance", label: "Attendance", icon: UserCheck },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/quizzes", label: "Quizzes", icon: Brain },
+  { href: "/admin/library", label: "Library", icon: Library },
 ];
 
 const settingsNav = [

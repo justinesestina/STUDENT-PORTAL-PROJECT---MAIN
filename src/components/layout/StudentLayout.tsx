@@ -37,9 +37,17 @@ const academicNav = [
   { href: "/grades", label: "Grade Report", icon: GraduationCap },
   { href: "/enrollment", label: "Enrolled Courses", icon: BookOpen },
   { href: "/assignments", label: "Homeworks", icon: FileText },
+  { href: "/quizzes", label: "Quizzes", icon: Library },
+  { href: "/attendance", label: "Attendance", icon: Calendar },
 ];
 
-const adminNav = [
+const servicesNav = [
+  { href: "/payments", label: "Payments", icon: CreditCard },
+  { href: "/library", label: "Library", icon: Library },
+  { href: "/events", label: "Events", icon: Calendar },
+];
+
+const settingsNav = [
   { href: "/profile", label: "Account Settings", icon: Settings },
 ];
 
@@ -110,10 +118,10 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
         </Link>
       </div>
       
-      {/* Navigation */}
       <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
         <NavSection title="Academic" items={academicNav} />
-        <NavSection title="Settings" items={adminNav} />
+        <NavSection title="Services" items={servicesNav} />
+        <NavSection title="Settings" items={settingsNav} />
       </nav>
 
       {/* User Profile & Logout */}

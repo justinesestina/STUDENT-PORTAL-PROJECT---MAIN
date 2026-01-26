@@ -17,6 +17,11 @@ import Grades from "./pages/Grades";
 import Schedule from "./pages/Schedule";
 import Assignments from "./pages/Assignments";
 import Profile from "./pages/Profile";
+import Payments from "./pages/Payments";
+import Quizzes from "./pages/Quizzes";
+import Library from "./pages/Library";
+import Attendance from "./pages/Attendance";
+import Events from "./pages/Events";
 import NotFound from "./pages/NotFound";
 
 // Admin Pages
@@ -28,6 +33,9 @@ import AdminAnnouncements from "./pages/admin/AdminAnnouncements";
 import AdminTimetable from "./pages/admin/AdminTimetable";
 import AdminAttendance from "./pages/admin/AdminAttendance";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminQuizzes from "./pages/admin/AdminQuizzes";
+import AdminLibrary from "./pages/admin/AdminLibrary";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +101,46 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/payments"
+              element={
+                <ProtectedRoute>
+                  <Payments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/quizzes"
+              element={
+                <ProtectedRoute>
+                  <Quizzes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/library"
+              element={
+                <ProtectedRoute>
+                  <Library />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <ProtectedRoute>
+                  <Attendance />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/events"
+              element={
+                <ProtectedRoute>
+                  <Events />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -149,6 +197,30 @@ const App = () => (
               element={
                 <AdminProtectedRoute>
                   <AdminSettings />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/payments"
+              element={
+                <AdminProtectedRoute>
+                  <AdminPayments />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/quizzes"
+              element={
+                <AdminProtectedRoute>
+                  <AdminQuizzes />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/library"
+              element={
+                <AdminProtectedRoute>
+                  <AdminLibrary />
                 </AdminProtectedRoute>
               }
             />
