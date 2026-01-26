@@ -303,6 +303,179 @@ export type Database = {
           },
         ]
       }
+      library_borrowings: {
+        Row: {
+          borrowed_at: string | null
+          due_date: string
+          id: string
+          resource_id: string
+          returned_at: string | null
+          status: string | null
+          student_id: string
+        }
+        Insert: {
+          borrowed_at?: string | null
+          due_date: string
+          id?: string
+          resource_id: string
+          returned_at?: string | null
+          status?: string | null
+          student_id: string
+        }
+        Update: {
+          borrowed_at?: string | null
+          due_date?: string
+          id?: string
+          resource_id?: string
+          returned_at?: string | null
+          status?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_borrowings_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "library_resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "library_borrowings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      library_resources: {
+        Row: {
+          author: string | null
+          available_copies: number | null
+          category: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          file_url: string | null
+          id: string
+          is_available: boolean | null
+          isbn: string | null
+          resource_type: string | null
+          title: string
+          total_copies: number | null
+        }
+        Insert: {
+          author?: string | null
+          available_copies?: number | null
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_available?: boolean | null
+          isbn?: string | null
+          resource_type?: string | null
+          title: string
+          total_copies?: number | null
+        }
+        Update: {
+          author?: string | null
+          available_copies?: number | null
+          category?: string | null
+          cover_image_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_url?: string | null
+          id?: string
+          is_available?: boolean | null
+          isbn?: string | null
+          resource_type?: string | null
+          title?: string
+          total_copies?: number | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          link: string | null
+          message: string
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message: string
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          paid_at: string | null
+          payment_type: string | null
+          status: string | null
+          student_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_type?: string | null
+          status?: string | null
+          student_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_type?: string | null
+          status?: string | null
+          student_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
@@ -359,6 +532,91 @@ export type Database = {
           year_level?: string | null
         }
         Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          correct_answer: string
+          id: string
+          options: Json
+          order_index: number | null
+          points: number | null
+          question: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_answer: string
+          id?: string
+          options?: Json
+          order_index?: number | null
+          points?: number | null
+          question: string
+          quiz_id: string
+        }
+        Update: {
+          correct_answer?: string
+          id?: string
+          options?: Json
+          order_index?: number | null
+          points?: number | null
+          question?: string
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          description: string | null
+          duration_minutes: number | null
+          end_date: string | null
+          id: string
+          is_active: boolean | null
+          start_date: string | null
+          title: string
+          total_points: number | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          title: string
+          total_points?: number | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          title?: string
+          total_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_assignments: {
         Row: {
@@ -440,6 +698,57 @@ export type Database = {
           },
           {
             foreignKeyName: "student_courses_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_quiz_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          id: string
+          quiz_id: string
+          score: number | null
+          started_at: string | null
+          status: string | null
+          student_id: string
+          total_points: number | null
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          quiz_id: string
+          score?: number | null
+          started_at?: string | null
+          status?: string | null
+          student_id: string
+          total_points?: number | null
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          quiz_id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string | null
+          student_id?: string
+          total_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_quiz_attempts_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
