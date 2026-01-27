@@ -4,6 +4,7 @@ import { useAdminAnnouncements } from "@/hooks/useAdminData";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+import { createNotificationForAllStudents } from "@/hooks/useNotifications";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,7 +87,16 @@ const AdminAnnouncements: React.FC = () => {
         });
 
         if (error) throw error;
-        toast.success("Announcement created successfully");
+        
+        // Create notifications for all students
+        await createNotificationForAllStudents(
+          "📢 New Announcement",
+          form.title,
+          "info",
+          "/dashboard"
+        );
+        
+        toast.success("Announcement published and students notified!");
       }
 
       setFormOpen(false);

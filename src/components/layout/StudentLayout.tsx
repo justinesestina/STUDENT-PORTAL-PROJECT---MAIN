@@ -8,7 +8,6 @@ import {
   FileText, 
   User,
   Search,
-  Bell,
   LogOut,
   Menu,
   Library,
@@ -29,6 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import logo from "@/assets/logo.png";
 
 const academicNav = [
@@ -194,12 +194,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-[10px] text-destructive-foreground flex items-center justify-center font-medium">
-                  3
-                </span>
-              </Button>
+              <NotificationBell />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

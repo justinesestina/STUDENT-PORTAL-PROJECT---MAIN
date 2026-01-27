@@ -36,7 +36,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminQuizzes from "./pages/admin/AdminQuizzes";
 import AdminLibrary from "./pages/admin/AdminLibrary";
-
+import AdminEnrollments from "./pages/admin/AdminEnrollments";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -221,6 +221,14 @@ const App = () => (
               element={
                 <AdminProtectedRoute>
                   <AdminLibrary />
+                </AdminProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/enrollments"
+              element={
+                <AdminProtectedRoute>
+                  <AdminEnrollments />
                 </AdminProtectedRoute>
               }
             />

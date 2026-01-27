@@ -27,6 +27,7 @@ const mainNav = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/courses", label: "Courses", icon: BookOpen },
+  { href: "/admin/enrollments", label: "Enrollments", icon: UserCheck },
   { href: "/admin/timetable", label: "Timetable", icon: Calendar },
 ];
 

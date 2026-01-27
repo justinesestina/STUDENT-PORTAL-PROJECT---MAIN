@@ -7,7 +7,8 @@ import {
   Save,
   X,
   Camera,
-  Loader2
+  Loader2,
+  Lock
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useFileUpload } from "@/hooks/useFileUpload";
+import { ChangePasswordDialog } from "@/components/profile/ChangePasswordDialog";
 
 const Profile: React.FC = () => {
   const { profile, refreshProfile } = useAuth();
@@ -35,6 +37,7 @@ const Profile: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const { uploadFile, uploading } = useFileUpload();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -393,12 +396,21 @@ const Profile: React.FC = () => {
                 <CardTitle className="text-base">Security Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div>
-                    <p className="font-medium">Password</p>
-                    <p className="text-sm text-muted-foreground">Last changed: Never</p>
+                    <p className="font-medium flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Password
+                    </p>
+                    <p className="text-sm text-muted-foreground">Change your account password</p>
                   </div>
-                  <Button variant="outline" size="sm">Change Password</Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setChangePasswordOpen(true)}
+                  >
+                    Change Password
+                  </Button>
                 </div>
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
@@ -419,6 +431,12 @@ const Profile: React.FC = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
     </StudentLayout>
   );
 };
