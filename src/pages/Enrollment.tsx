@@ -6,13 +6,19 @@ import {
   MapPin, 
   Users, 
   Star,
-  Plus
+  Plus,
+  Loader2,
+  BookOpen,
+  CheckCircle2,
+  GraduationCap,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -20,115 +26,266 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { StudentLayout } from "@/components/layout/StudentLayout";
+import { useEnrollment, COLLEGE_COURSES } from "@/hooks/useEnrollment";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Mock data
-const availableCourses = [
-  {
-    id: "1",
-    code: "CS401",
-    name: "Advanced Algorithms",
-    instructor: "Dr. Anderson",
-    credits: 3,
-    description: "Deep dive into advanced algorithmic concepts and optimization techniques.",
-    schedule: "Mon, Wed, Fri • 10:00-11:00 AM",
-    room: "Engineering Building - Room 204",
-    enrolled: 28,
-    max: 35,
-    level: "Advanced",
-    prerequisites: ["CS301", "MATH250"],
-    rating: 4.8,
-  },
-  {
-    id: "2",
-    code: "CS450",
-    name: "Machine Learning Fundamentals",
-    instructor: "Prof. Chen",
-    credits: 4,
-    description: "Introduction to machine learning algorithms and practical applications.",
-    schedule: "Tue, Thu • 2:00-4:00 PM",
-    room: "Computer Lab - Room 105",
-    enrolled: 32,
-    max: 40,
-    level: "Intermediate",
-    prerequisites: ["CS301", "STAT200"],
-    rating: 4.9,
-  },
-  {
-    id: "3",
-    code: "CS350",
-    name: "Database Systems",
-    instructor: "Dr. Kumar",
-    credits: 3,
-    description: "Comprehensive study of database design, implementation, and management.",
-    schedule: "Mon, Wed • 1:00-2:30 PM",
-    room: "Engineering Building - Room 301",
-    enrolled: 15,
-    max: 30,
-    level: "Intermediate",
-    prerequisites: ["CS201"],
-    rating: 4.6,
-  },
-];
-
-const myCourses = [
-  {
-    id: "1",
-    code: "MATH301",
-    name: "Advanced Mathematics",
-    instructor: "Dr. Smith",
-    credits: 4,
-    status: "enrolled",
-    progress: 75,
-  },
-  {
-    id: "2",
-    code: "CS101",
-    name: "Computer Science Fundamentals",
-    instructor: "Prof. Johnson",
-    credits: 3,
-    status: "enrolled",
-    progress: 90,
-  },
-];
-
 const Enrollment: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const { profile, user } = useAuth();
+  const {
+    availableCourses,
+    enrolledCourses,
+    loading,
+    enrolling,
+    currentCredits,
+    maxCredits,
+    enrollInCourse,
+    collegeCourses,
+  } = useEnrollment();
 
-  const handleEnroll = (courseName: string) => {
-    toast.success(`Successfully enrolled in ${courseName}`);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLevel, setSelectedLevel] = useState("all");
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [enrollingProgram, setEnrollingProgram] = useState(false);
+
+  const filteredCourses = availableCourses.filter((course) => {
+    const matchesSearch =
+      course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      course.code.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLevel =
+      selectedLevel === "all" || course.level?.toLowerCase() === selectedLevel;
+    return matchesSearch && matchesLevel;
+  });
+
+  const handleEnrollCourse = async (courseId: string) => {
+    try {
+      const result = await enrollInCourse(courseId);
+      toast.success(`Successfully enrolled in ${result.courseName}!`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to enroll");
+    }
   };
 
-  const filteredCourses = availableCourses.filter((course) =>
-    course.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const isEnrolled = (courseId: string) => {
+    return enrolledCourses.some((e) => e.course_id === courseId);
+  };
 
-  const currentCredits = myCourses.reduce((sum, c) => sum + c.credits, 0);
-  const maxCredits = 18;
+  // Handle program enrollment with subjects
+  const handleProgramEnroll = async () => {
+    if (!selectedProgram || !profile?.id || !user?.id) {
+      toast.error("Please select a program");
+      return;
+    }
+
+    const program = collegeCourses.find((c) => c.id === selectedProgram);
+    if (!program) return;
+
+    setEnrollingProgram(true);
+    try {
+      // Create courses for selected subjects if they don't exist, then enroll
+      for (const subject of program.subjects) {
+        // Check if course exists
+        let { data: existingCourse } = await supabase
+          .from("courses")
+          .select("id")
+          .eq("code", subject.code)
+          .maybeSingle();
+
+        let courseId = existingCourse?.id;
+
+        // Create course if it doesn't exist
+        if (!courseId) {
+          const { data: newCourse, error: createError } = await supabase
+            .from("courses")
+            .insert({
+              code: subject.code,
+              name: subject.name,
+              credits: subject.credits,
+              schedule: subject.schedule,
+              room: subject.room,
+              description: `${program.name} - ${subject.name}`,
+              level: "Intermediate",
+              max_enrollment: 40,
+              current_enrollment: 0,
+            })
+            .select("id")
+            .single();
+
+          if (createError) {
+            console.error("Error creating course:", createError);
+            continue;
+          }
+          courseId = newCourse?.id;
+        }
+
+        // Enroll student in the course
+        if (courseId) {
+          const { data: existingEnrollment } = await supabase
+            .from("student_courses")
+            .select("id")
+            .eq("student_id", profile.id)
+            .eq("course_id", courseId)
+            .maybeSingle();
+
+          if (!existingEnrollment) {
+            await supabase.from("student_courses").insert({
+              student_id: profile.id,
+              course_id: courseId,
+              status: "enrolled",
+              progress: 0,
+            });
+
+            // Update enrollment count
+            await supabase
+              .from("courses")
+              .update({ current_enrollment: 1 })
+              .eq("id", courseId);
+          }
+        }
+      }
+
+      // Update student's course in profile
+      await supabase
+        .from("profiles")
+        .update({ course: program.name })
+        .eq("id", profile.id);
+
+      // Create notification
+      await supabase.from("notifications").insert({
+        user_id: user.id,
+        title: "Enrollment Complete!",
+        message: `You are now officially enrolled in ${program.name} with ${program.subjects.length} subjects.`,
+        type: "success",
+        link: "/enrollment",
+      });
+
+      // Create timetable entries for the subjects
+      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+      for (let i = 0; i < program.subjects.length; i++) {
+        const subject = program.subjects[i];
+        const scheduleMatch = subject.schedule.match(/(MWF|TTh|MW|TF)/);
+        const timeMatch = subject.schedule.match(/(\d{1,2}:\d{2})/g);
+        
+        if (scheduleMatch && timeMatch) {
+          const scheduleDays = scheduleMatch[1];
+          const startTime = timeMatch[0];
+          const endTime = timeMatch[1] || `${parseInt(startTime.split(':')[0]) + 1}:00`;
+
+          // Get course ID
+          const { data: course } = await supabase
+            .from("courses")
+            .select("id")
+            .eq("code", subject.code)
+            .maybeSingle();
+
+          if (course) {
+            const daysToAdd = scheduleDays === "MWF" 
+              ? ["Monday", "Wednesday", "Friday"]
+              : scheduleDays === "TTh"
+              ? ["Tuesday", "Thursday"]
+              : scheduleDays === "MW"
+              ? ["Monday", "Wednesday"]
+              : ["Tuesday", "Friday"];
+
+            for (const day of daysToAdd) {
+              await supabase.from("timetable").insert({
+                student_id: profile.id,
+                course_id: course.id,
+                day_of_week: day,
+                start_time: startTime,
+                end_time: endTime,
+                room: subject.room,
+                title: subject.name,
+                event_type: "Lecture",
+              });
+            }
+          }
+        }
+      }
+
+      toast.success(`Successfully enrolled in ${program.name}!`);
+      setEnrollDialogOpen(false);
+      setSelectedProgram(null);
+      setSelectedSubjects([]);
+      
+      // Refresh the page data
+      window.location.reload();
+    } catch (error: any) {
+      console.error("Enrollment error:", error);
+      toast.error(error.message || "Failed to complete enrollment");
+    } finally {
+      setEnrollingProgram(false);
+    }
+  };
+
+  const selectedProgramData = collegeCourses.find((c) => c.id === selectedProgram);
 
   return (
     <StudentLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">Course Enrollment</h1>
-            <p className="text-muted-foreground">Browse and enroll in available courses</p>
+            <p className="text-muted-foreground">
+              Browse and enroll in available courses
+            </p>
           </div>
-          <Badge variant="outline" className="text-sm px-3 py-1">
-            Current Credits: {currentCredits}/{maxCredits}
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-sm px-3 py-1">
+              Credits: {currentCredits}/{maxCredits}
+            </Badge>
+            <Button onClick={() => setEnrollDialogOpen(true)}>
+              <GraduationCap className="mr-2 h-4 w-4" />
+              Enroll in Program
+            </Button>
+          </div>
         </div>
+
+        {/* Student Info Card */}
+        <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                <GraduationCap className="h-8 w-8 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">{profile?.full_name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  Student ID: <span className="font-mono font-medium">{profile?.student_number}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Program: {profile?.course || "Not enrolled in a program yet"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-primary">{enrolledCourses.length}</p>
+                <p className="text-sm text-muted-foreground">Enrolled Courses</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tabs */}
         <Tabs defaultValue="available" className="space-y-6">
           <TabsList>
             <TabsTrigger value="available">Available Courses</TabsTrigger>
-            <TabsTrigger value="my-courses">My Courses</TabsTrigger>
-            <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+            <TabsTrigger value="my-courses">
+              My Courses ({enrolledCourses.length})
+            </TabsTrigger>
+            <TabsTrigger value="programs">Programs</TabsTrigger>
           </TabsList>
 
           <TabsContent value="available" className="space-y-4">
@@ -143,125 +300,343 @@ const Enrollment: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select value={selectedLevel} onValueChange={setSelectedLevel}>
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder="All Levels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="cs">Computer Science</SelectItem>
-                  <SelectItem value="math">Mathematics</SelectItem>
-                  <SelectItem value="physics">Physics</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="beginner">Beginner</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="advanced">Advanced</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                More Filters
-              </Button>
             </div>
 
             {/* Course Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {filteredCourses.map((course) => (
-                <Card key={course.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{course.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {course.code} • {course.instructor} • {course.credits} Credits
-                        </p>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredCourses.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No courses available</h3>
+                  <p className="text-muted-foreground">
+                    {searchQuery
+                      ? "Try adjusting your search"
+                      : "Check back later for new courses"}
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {filteredCourses.map((course) => (
+                  <Card
+                    key={course.id}
+                    className="overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">{course.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {course.code} • {course.instructor || "TBA"} •{" "}
+                            {course.credits} Credits
+                          </p>
+                        </div>
+                        {course.rating && (
+                          <div className="flex items-center gap-1 text-warning">
+                            <Star className="h-4 w-4 fill-current" />
+                            <span className="font-medium">{course.rating}</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1 text-warning">
-                        <Star className="h-4 w-4 fill-current" />
-                        <span className="font-medium">{course.rating}</span>
-                      </div>
-                    </div>
 
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {course.description}
-                    </p>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {course.description || "No description available"}
+                      </p>
 
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {course.schedule}
+                      <div className="space-y-2 text-sm">
+                        {course.schedule && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {course.schedule}
+                          </div>
+                        )}
+                        {course.room && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            {course.room}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          {course.current_enrollment}/{course.max_enrollment}{" "}
+                          enrolled
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <MapPin className="h-4 w-4" />
-                        {course.room}
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        {course.enrolled}/{course.max} enrolled
-                      </div>
-                    </div>
 
-                    <div className="flex items-center gap-2 mt-4">
-                      <Badge variant={course.level === "Advanced" ? "destructive" : "secondary"}>
-                        {course.level}
-                      </Badge>
-                      {course.prerequisites.length > 0 && (
-                        <Badge variant="outline">
-                          Prerequisites: {course.prerequisites.join(", ")}
+                      <div className="flex items-center gap-2 mt-4">
+                        <Badge
+                          variant={
+                            course.level === "Advanced"
+                              ? "destructive"
+                              : "secondary"
+                          }
+                        >
+                          {course.level || "Intermediate"}
                         </Badge>
-                      )}
-                    </div>
+                      </div>
 
-                    <Button 
-                      className="w-full mt-4"
-                      onClick={() => handleEnroll(course.name)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Enroll Now
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                      <Button
+                        className="w-full mt-4"
+                        onClick={() => handleEnrollCourse(course.id)}
+                        disabled={
+                          enrolling ||
+                          isEnrolled(course.id) ||
+                          (course.current_enrollment || 0) >=
+                            (course.max_enrollment || 40)
+                        }
+                      >
+                        {isEnrolled(course.id) ? (
+                          <>
+                            <CheckCircle2 className="mr-2 h-4 w-4" />
+                            Enrolled
+                          </>
+                        ) : enrolling ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Enrolling...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Enroll Now
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="my-courses" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {myCourses.map((course) => (
-                <Card key={course.id}>
+            {enrolledCourses.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">No enrolled courses</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Start by enrolling in a program or individual courses
+                  </p>
+                  <Button onClick={() => setEnrollDialogOpen(true)}>
+                    <GraduationCap className="mr-2 h-4 w-4" />
+                    Enroll Now
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {enrolledCourses.map((enrollment) => (
+                  <Card key={enrollment.id}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold">
+                            {enrollment.course?.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            {enrollment.course?.code} •{" "}
+                            {enrollment.course?.instructor || "TBA"} •{" "}
+                            {enrollment.course?.credits} Credits
+                          </p>
+                        </div>
+                        <Badge variant="default">Enrolled</Badge>
+                      </div>
+
+                      <div className="space-y-2 text-sm mb-4">
+                        {enrollment.course?.schedule && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {enrollment.course.schedule}
+                          </div>
+                        )}
+                        {enrollment.course?.room && (
+                          <div className="flex items-center gap-2 text-muted-foreground">
+                            <MapPin className="h-4 w-4" />
+                            {enrollment.course.room}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Progress</span>
+                          <span>{enrollment.progress || 0}%</span>
+                        </div>
+                        <Progress value={enrollment.progress || 0} />
+                      </div>
+
+                      <p className="text-xs text-muted-foreground mt-4">
+                        Enrolled on{" "}
+                        {new Date(
+                          enrollment.enrolled_at || ""
+                        ).toLocaleDateString()}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="programs" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {collegeCourses.map((program) => (
+                <Card
+                  key={program.id}
+                  className="cursor-pointer hover:shadow-lg transition-all hover:border-primary"
+                  onClick={() => {
+                    setSelectedProgram(program.id);
+                    setEnrollDialogOpen(true);
+                  }}
+                >
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold">{course.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {course.code} • {course.instructor} • {course.credits} Credits
-                        </p>
-                      </div>
-                      <Badge variant="default">Enrolled</Badge>
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <GraduationCap className="h-6 w-6 text-primary" />
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Progress</span>
-                        <span>{course.progress}%</span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${course.progress}%` }}
-                        />
-                      </div>
-                    </div>
+                    <h3 className="font-semibold mb-1">{program.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {program.code}
+                    </p>
+                    <Badge variant="outline">
+                      {program.subjects.length} Subjects
+                    </Badge>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      {program.subjects.reduce((acc, s) => acc + s.credits, 0)}{" "}
+                      Total Credits
+                    </p>
                   </CardContent>
                 </Card>
               ))}
             </div>
           </TabsContent>
-
-          <TabsContent value="waitlist">
-            <Card>
-              <CardContent className="p-12 text-center">
-                <p className="text-muted-foreground">No courses in waitlist</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Program Enrollment Dialog */}
+      <Dialog open={enrollDialogOpen} onOpenChange={setEnrollDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Enroll in a Program</DialogTitle>
+            <DialogDescription>
+              Select a program to view its subjects and complete your enrollment.
+              Your Student ID ({profile?.student_number}) will be used for this
+              enrollment.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Program Selection */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Program</label>
+              <Select
+                value={selectedProgram || ""}
+                onValueChange={setSelectedProgram}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a program..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {collegeCourses.map((program) => (
+                    <SelectItem key={program.id} value={program.id}>
+                      {program.code} - {program.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Subjects List */}
+            {selectedProgramData && (
+              <div className="space-y-3">
+                <label className="text-sm font-medium">
+                  Subjects ({selectedProgramData.subjects.length})
+                </label>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {selectedProgramData.subjects.map((subject) => (
+                    <div
+                      key={subject.code}
+                      className="p-3 border rounded-lg bg-muted/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{subject.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {subject.code} • {subject.credits} Credits
+                          </p>
+                        </div>
+                        <Badge variant="outline">{subject.credits} CR</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {subject.schedule}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          {subject.room}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-between text-sm pt-2 border-t">
+                  <span className="font-medium">Total Credits:</span>
+                  <span className="font-bold text-primary">
+                    {selectedProgramData.subjects.reduce(
+                      (acc, s) => acc + s.credits,
+                      0
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEnrollDialogOpen(false);
+                setSelectedProgram(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleProgramEnroll}
+              disabled={!selectedProgram || enrollingProgram}
+            >
+              {enrollingProgram ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enrolling...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Confirm Enrollment
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </StudentLayout>
   );
 };

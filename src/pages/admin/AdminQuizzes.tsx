@@ -24,6 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { createNotificationForAllStudents } from "@/hooks/useNotifications";
 
 const AdminQuizzes: React.FC = () => {
   const queryClient = useQueryClient();
@@ -75,10 +76,20 @@ const AdminQuizzes: React.FC = () => {
     mutationFn: async (data: any) => {
       const { error } = await supabase.from("quizzes").insert(data);
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["admin-quizzes"] });
-      toast.success("Quiz created");
+      
+      // Notify all students about new quiz
+      await createNotificationForAllStudents(
+        "📝 New Quiz Available",
+        `A new quiz "${data.title}" has been added. Check it out!`,
+        "info",
+        "/quizzes"
+      );
+      
+      toast.success("Quiz created and students notified!");
       setIsDialogOpen(false);
       resetForm();
     },
