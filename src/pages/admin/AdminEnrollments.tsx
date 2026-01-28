@@ -30,7 +30,9 @@ import {
   BookOpen,
   RefreshCw,
   Calendar,
+  FileSpreadsheet,
 } from "lucide-react";
+import { exportEnrollmentsToExcel } from "@/utils/exportExcel";
 
 interface EnrollmentWithDetails {
   id: string;
@@ -129,10 +131,23 @@ const AdminEnrollments: React.FC = () => {
               View and manage student course enrollments
             </p>
           </div>
-          <Button variant="outline" onClick={fetchEnrollments}>
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={fetchEnrollments}>
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                exportEnrollmentsToExcel(enrollments as any);
+                toast.success("Enrollment data exported to Excel!");
+              }}
+              disabled={enrollments.length === 0}
+            >
+              <FileSpreadsheet className="mr-2 h-4 w-4" />
+              Export Excel
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}

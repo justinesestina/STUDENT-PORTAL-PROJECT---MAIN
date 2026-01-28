@@ -1,10 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { useAdminAnnouncements } from "@/hooks/useAdminData";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { createNotificationForAllStudents } from "@/hooks/useNotifications";
+import { 
+  createAnnouncement, 
+  updateAnnouncement, 
+  deleteAnnouncement 
+} from "@/lib/adminApi";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -27,6 +30,7 @@ import {
   Trash2,
   Loader2,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 
 type Announcement = Tables<"announcements">;
@@ -42,13 +46,51 @@ const defaultForm: AnnouncementForm = {
 };
 
 const AdminAnnouncements: React.FC = () => {
-  const { announcements, loading, refetch } = useAdminAnnouncements();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [form, setForm] = useState<AnnouncementForm>(defaultForm);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingAnnouncement, setDeletingAnnouncement] = useState<Announcement | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+
+  const fetchAnnouncements = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("announcements")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (error) {
+      console.error("Error fetching announcements:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAnnouncements();
+
+    // Real-time subscription
+    const channel = supabase
+      .channel("admin-announcements-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "announcements" },
+        () => fetchAnnouncements()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchAnnouncements]);
+
+  const refetch = fetchAnnouncements;
 
   const handleOpenForm = (announcement?: Announcement) => {
     if (announcement) {
@@ -70,32 +112,12 @@ const AdminAnnouncements: React.FC = () => {
 
     try {
       if (editingAnnouncement) {
-        const { error } = await supabase
-          .from("announcements")
-          .update({
-            title: form.title,
-            content: form.content,
-          })
-          .eq("id", editingAnnouncement.id);
-
-        if (error) throw error;
+        // Use edge function for update
+        await updateAnnouncement(editingAnnouncement.id, form.title, form.content);
         toast.success("Announcement updated successfully");
       } else {
-        const { error } = await supabase.from("announcements").insert({
-          title: form.title,
-          content: form.content,
-        });
-
-        if (error) throw error;
-        
-        // Create notifications for all students
-        await createNotificationForAllStudents(
-          "📢 New Announcement",
-          form.title,
-          "info",
-          "/dashboard"
-        );
-        
+        // Use edge function for create (handles notifications too)
+        await createAnnouncement(form.title, form.content);
         toast.success("Announcement published and students notified!");
       }
 
@@ -115,13 +137,8 @@ const AdminAnnouncements: React.FC = () => {
     setFormLoading(true);
 
     try {
-      const { error } = await supabase
-        .from("announcements")
-        .delete()
-        .eq("id", deletingAnnouncement.id);
-
-      if (error) throw error;
-
+      // Use edge function for delete
+      await deleteAnnouncement(deletingAnnouncement.id);
       toast.success("Announcement deleted successfully");
       setDeleteOpen(false);
       setDeletingAnnouncement(null);
