@@ -37,8 +37,11 @@ import {
   Loader2,
   Users,
   RefreshCw,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
-
+import { exportStudentsToExcel } from "@/utils/exportExcel";
+import { format } from "date-fns";
 type Profile = Tables<"profiles">;
 
 const AdminStudents: React.FC = () => {
@@ -278,6 +281,17 @@ const AdminStudents: React.FC = () => {
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  exportStudentsToExcel(students as any);
+                  toast.success("Student data exported to Excel!");
+                }}
+                disabled={students.length === 0}
+              >
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Export Excel
+              </Button>
             </div>
           </CardHeader>
 
@@ -304,6 +318,7 @@ const AdminStudents: React.FC = () => {
                       <TableHead className="hidden lg:table-cell">Course</TableHead>
                       <TableHead className="hidden sm:table-cell">Year</TableHead>
                       <TableHead className="hidden xl:table-cell">Contact</TableHead>
+                      <TableHead className="hidden xl:table-cell">Registered</TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -343,6 +358,13 @@ const AdminStudents: React.FC = () => {
                           <div className="text-sm">
                             <p className="truncate max-w-[180px]">{student.email}</p>
                             <p className="text-muted-foreground">{student.mobile_number || "-"}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden xl:table-cell">
+                          <div className="text-sm text-muted-foreground">
+                            {student.created_at 
+                              ? format(new Date(student.created_at), "MMM d, yyyy")
+                              : "-"}
                           </div>
                         </TableCell>
                         <TableCell>

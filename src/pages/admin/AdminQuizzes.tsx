@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { 
   Brain, 
   Plus,
@@ -8,7 +8,8 @@ import {
   Loader2,
   Clock,
   Target,
-  Users
+  Users,
+  RefreshCw,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,16 +22,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { createNotificationForAllStudents } from "@/hooks/useNotifications";
+import { createQuiz, updateQuiz, deleteQuiz } from "@/lib/adminApi";
 
 const AdminQuizzes: React.FC = () => {
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<any>(null);
+  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [courses, setCourses] = useState<any[]>([]);
+  const [attempts, setAttempts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -42,85 +46,37 @@ const AdminQuizzes: React.FC = () => {
     end_date: "",
   });
 
-  const { data: quizzes, isLoading } = useQuery({
-    queryKey: ["admin-quizzes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quizzes")
-        .select("*, course:courses(name, code)")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const { data: courses } = useQuery({
-    queryKey: ["courses-list"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("courses").select("id, name, code").order("name");
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const { data: attempts } = useQuery({
-    queryKey: ["quiz-attempts-count"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("student_quiz_attempts").select("quiz_id");
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const { error } = await supabase.from("quizzes").insert(data);
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: async (data) => {
-      queryClient.invalidateQueries({ queryKey: ["admin-quizzes"] });
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [quizzesRes, coursesRes, attemptsRes] = await Promise.all([
+        supabase.from("quizzes").select("*, course:courses(name, code)").order("created_at", { ascending: false }),
+        supabase.from("courses").select("id, name, code").order("name"),
+        supabase.from("student_quiz_attempts").select("quiz_id"),
+      ]);
       
-      // Notify all students about new quiz
-      await createNotificationForAllStudents(
-        "📝 New Quiz Available",
-        `A new quiz "${data.title}" has been added. Check it out!`,
-        "info",
-        "/quizzes"
-      );
-      
-      toast.success("Quiz created and students notified!");
-      setIsDialogOpen(false);
-      resetForm();
-    },
-    onError: () => toast.error("Failed to create quiz"),
-  });
+      setQuizzes(quizzesRes.data || []);
+      setCourses(coursesRes.data || []);
+      setAttempts(attemptsRes.data || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const { error } = await supabase.from("quizzes").update(data).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-quizzes"] });
-      toast.success("Quiz updated");
-      setIsDialogOpen(false);
-      resetForm();
-    },
-    onError: () => toast.error("Failed to update quiz"),
-  });
+  useEffect(() => {
+    fetchData();
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("quizzes").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-quizzes"] });
-      toast.success("Quiz deleted");
-    },
-    onError: () => toast.error("Failed to delete quiz"),
-  });
+    const channel = supabase
+      .channel("admin-quizzes-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "quizzes" }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
 
   const resetForm = () => {
     setFormData({
@@ -136,22 +92,45 @@ const AdminQuizzes: React.FC = () => {
     setEditingQuiz(null);
   };
 
-  const handleSubmit = () => {
-    const payload = {
-      title: formData.title,
-      description: formData.description,
-      course_id: formData.course_id || null,
-      duration_minutes: parseInt(formData.duration_minutes),
-      total_points: parseInt(formData.total_points),
-      is_active: formData.is_active,
-      start_date: formData.start_date || null,
-      end_date: formData.end_date || null,
-    };
+  const handleSubmit = async () => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        course_id: formData.course_id || null,
+        duration_minutes: parseInt(formData.duration_minutes),
+        total_points: parseInt(formData.total_points),
+        is_active: formData.is_active,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+      };
 
-    if (editingQuiz) {
-      updateMutation.mutate({ id: editingQuiz.id, data: payload });
-    } else {
-      createMutation.mutate(payload);
+      if (editingQuiz) {
+        await updateQuiz(editingQuiz.id, payload);
+        toast.success("Quiz updated");
+      } else {
+        await createQuiz(payload);
+        toast.success("Quiz created and students notified!");
+      }
+
+      setIsDialogOpen(false);
+      resetForm();
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save quiz");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteQuiz(id);
+      toast.success("Quiz deleted");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete quiz");
     }
   };
 
@@ -247,7 +226,8 @@ const AdminQuizzes: React.FC = () => {
                   <Label>Active</Label>
                   <Switch checked={formData.is_active} onCheckedChange={(c) => setFormData(p => ({ ...p, is_active: c }))} />
                 </div>
-                <Button className="w-full" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+                <Button className="w-full" onClick={handleSubmit} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                   {editingQuiz ? "Update Quiz" : "Create Quiz"}
                 </Button>
               </div>
@@ -317,7 +297,7 @@ const AdminQuizzes: React.FC = () => {
                     <Button size="icon" variant="ghost" onClick={() => openEdit(quiz)}>
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteMutation.mutate(quiz.id)}>
+                    <Button size="icon" variant="ghost" className="text-destructive" onClick={() => handleDelete(quiz.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
