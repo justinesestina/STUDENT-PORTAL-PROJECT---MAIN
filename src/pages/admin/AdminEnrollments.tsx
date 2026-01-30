@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { supabase } from "@/integrations/supabase/client";
+import { useAdminEnrollments } from "@/hooks/useAdminData";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,71 +34,10 @@ import {
 } from "lucide-react";
 import { exportEnrollmentsToExcel } from "@/utils/exportExcel";
 
-interface EnrollmentWithDetails {
-  id: string;
-  student_id: string;
-  course_id: string;
-  status: string | null;
-  progress: number | null;
-  enrolled_at: string | null;
-  student: {
-    full_name: string;
-    student_number: string;
-    email: string;
-    course: string | null;
-  } | null;
-  course: {
-    code: string;
-    name: string;
-    credits: number | null;
-  } | null;
-}
-
 const AdminEnrollments: React.FC = () => {
-  const [enrollments, setEnrollments] = useState<EnrollmentWithDetails[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { enrollments, loading, refetch } = useAdminEnrollments();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  const fetchEnrollments = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from("student_courses")
-        .select(`
-          *,
-          student:profiles!student_courses_student_id_fkey(full_name, student_number, email, course),
-          course:courses!student_courses_course_id_fkey(code, name, credits)
-        `)
-        .order("enrolled_at", { ascending: false });
-
-      if (error) throw error;
-      setEnrollments((data as EnrollmentWithDetails[]) || []);
-    } catch (error) {
-      console.error("Error fetching enrollments:", error);
-      toast.error("Failed to load enrollments");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchEnrollments();
-
-    // Real-time subscription
-    const channel = supabase
-      .channel("admin-enrollments")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "student_courses" },
-        () => fetchEnrollments()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchEnrollments]);
 
   const filteredEnrollments = enrollments.filter((enrollment) => {
     const matchesSearch =
@@ -132,7 +71,7 @@ const AdminEnrollments: React.FC = () => {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={fetchEnrollments}>
+            <Button variant="outline" onClick={refetch}>
               <RefreshCw className="mr-2 h-4 w-4" />
               Refresh
             </Button>

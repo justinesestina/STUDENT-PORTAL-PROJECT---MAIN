@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import { adminApi } from "@/lib/adminApi";
 
 type Profile = Tables<"profiles">;
 type Course = Tables<"courses">;
@@ -22,16 +23,22 @@ export const useAdminStudents = () => {
     setLoading(true);
     setError(null);
     try {
-      const { data, error: fetchError } = await supabase
-        .from("profiles")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (fetchError) throw fetchError;
-      setStudents(data || []);
+      // Use admin API to bypass RLS
+      const result = await adminApi("get_students");
+      setStudents(result.data || []);
     } catch (err: any) {
       setError(err.message);
       console.error("Error fetching students:", err);
+      // Fallback to direct query (will work if user has admin role in Supabase)
+      try {
+        const { data } = await supabase
+          .from("profiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+        setStudents(data || []);
+      } catch (fallbackErr) {
+        console.error("Fallback fetch also failed:", fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -40,13 +47,16 @@ export const useAdminStudents = () => {
   useEffect(() => {
     fetchStudents();
 
-    // Real-time subscription
+    // Real-time subscription for live updates
     const channel = supabase
-      .channel("admin-students")
+      .channel("admin-students-realtime")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "profiles" },
-        () => fetchStudents()
+        (payload) => {
+          console.log("Student change detected:", payload);
+          fetchStudents();
+        }
       )
       .subscribe();
 
@@ -56,6 +66,64 @@ export const useAdminStudents = () => {
   }, [fetchStudents]);
 
   return { students, loading, error, refetch: fetchStudents };
+};
+
+export const useAdminEnrollments = () => {
+  const [enrollments, setEnrollments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchEnrollments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Use admin API to bypass RLS
+      const result = await adminApi("get_enrollments");
+      setEnrollments(result.data || []);
+    } catch (err: any) {
+      setError(err.message);
+      console.error("Error fetching enrollments:", err);
+      // Fallback to direct query
+      try {
+        const { data } = await supabase
+          .from("student_courses")
+          .select(`
+            *,
+            student:profiles(id, full_name, student_number, email, course),
+            course:courses(id, name, code, credits)
+          `)
+          .order("enrolled_at", { ascending: false });
+        setEnrollments(data || []);
+      } catch (fallbackErr) {
+        console.error("Fallback fetch also failed:", fallbackErr);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEnrollments();
+
+    // Real-time subscription for live updates
+    const channel = supabase
+      .channel("admin-enrollments-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "student_courses" },
+        (payload) => {
+          console.log("Enrollment change detected:", payload);
+          fetchEnrollments();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchEnrollments]);
+
+  return { enrollments, loading, error, refetch: fetchEnrollments };
 };
 
 export const useAdminCourses = () => {
@@ -105,14 +173,21 @@ export const useAdminAnnouncements = () => {
   const fetchAnnouncements = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      setAnnouncements(data || []);
+      // Use admin API to get announcements
+      const result = await adminApi("get_announcements");
+      setAnnouncements(result.data || []);
     } catch (err) {
       console.error("Error fetching announcements:", err);
+      // Fallback
+      try {
+        const { data } = await supabase
+          .from("announcements")
+          .select("*")
+          .order("created_at", { ascending: false });
+        setAnnouncements(data || []);
+      } catch (fallbackErr) {
+        console.error("Fallback fetch also failed:", fallbackErr);
+      }
     } finally {
       setLoading(false);
     }
@@ -149,27 +224,23 @@ export const useAdminStats = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      // Get total students
-      const { count: studentCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      // Get active courses
+      // Use admin API to get students count
+      const studentsResult = await adminApi("get_students");
+      const enrollmentsResult = await adminApi("get_enrollments");
+      
       const { count: courseCount } = await supabase
         .from("courses")
         .select("*", { count: "exact", head: true });
 
-      // Get pending enrollments
-      const { count: pendingCount } = await supabase
-        .from("student_courses")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
+      const pendingCount = (enrollmentsResult.data || []).filter(
+        (e: any) => e.status === "pending"
+      ).length;
 
       setStats({
-        totalStudents: studentCount || 0,
+        totalStudents: studentsResult.data?.length || 0,
         activeCourses: courseCount || 0,
-        pendingEnrollments: pendingCount || 0,
-        avgAttendance: 87, // This would come from attendance tracking
+        pendingEnrollments: pendingCount,
+        avgAttendance: 87,
       });
     } catch (err) {
       console.error("Error fetching stats:", err);
