@@ -51,6 +51,7 @@ const Enrollment: React.FC = () => {
     maxCredits,
     enrollInCourse,
     collegeCourses,
+    refetch,
   } = useEnrollment();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,134 +95,27 @@ const Enrollment: React.FC = () => {
 
     setEnrollingProgram(true);
     try {
-      // Create courses for selected subjects if they don't exist, then enroll
-      for (const subject of program.subjects) {
-        // Check if course exists
-        let { data: existingCourse } = await supabase
-          .from("courses")
-          .select("id")
-          .eq("code", subject.code)
-          .maybeSingle();
-
-        let courseId = existingCourse?.id;
-
-        // Create course if it doesn't exist
-        if (!courseId) {
-          const { data: newCourse, error: createError } = await supabase
-            .from("courses")
-            .insert({
-              code: subject.code,
-              name: subject.name,
-              credits: subject.credits,
-              schedule: subject.schedule,
-              room: subject.room,
-              description: `${program.name} - ${subject.name}`,
-              level: "Intermediate",
-              max_enrollment: 40,
-              current_enrollment: 0,
-            })
-            .select("id")
-            .single();
-
-          if (createError) {
-            console.error("Error creating course:", createError);
-            continue;
-          }
-          courseId = newCourse?.id;
-        }
-
-        // Enroll student in the course
-        if (courseId) {
-          const { data: existingEnrollment } = await supabase
-            .from("student_courses")
-            .select("id")
-            .eq("student_id", profile.id)
-            .eq("course_id", courseId)
-            .maybeSingle();
-
-          if (!existingEnrollment) {
-            await supabase.from("student_courses").insert({
-              student_id: profile.id,
-              course_id: courseId,
-              status: "enrolled",
-              progress: 0,
-            });
-
-            // Update enrollment count
-            await supabase
-              .from("courses")
-              .update({ current_enrollment: 1 })
-              .eq("id", courseId);
-          }
-        }
-      }
-
-      // Update student's course in profile
-      await supabase
-        .from("profiles")
-        .update({ course: program.name })
-        .eq("id", profile.id);
-
-      // Create notification
-      await supabase.from("notifications").insert({
-        user_id: user.id,
-        title: "Enrollment Complete!",
-        message: `You are now officially enrolled in ${program.name} with ${program.subjects.length} subjects.`,
-        type: "success",
-        link: "/enrollment",
+      // Program enrollment touches tables that students cannot write to directly
+      // (e.g., courses/timetable). We delegate this to a secured backend function.
+      const { data: res, error } = await supabase.functions.invoke("student-enroll-program", {
+        body: { programId: selectedProgram },
       });
 
-      // Create timetable entries for the subjects
-      const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-      for (let i = 0; i < program.subjects.length; i++) {
-        const subject = program.subjects[i];
-        const scheduleMatch = subject.schedule.match(/(MWF|TTh|MW|TF)/);
-        const timeMatch = subject.schedule.match(/(\d{1,2}:\d{2})/g);
-        
-        if (scheduleMatch && timeMatch) {
-          const scheduleDays = scheduleMatch[1];
-          const startTime = timeMatch[0];
-          const endTime = timeMatch[1] || `${parseInt(startTime.split(':')[0]) + 1}:00`;
+      if (error) {
+        throw new Error(error.message);
+      }
 
-          // Get course ID
-          const { data: course } = await supabase
-            .from("courses")
-            .select("id")
-            .eq("code", subject.code)
-            .maybeSingle();
-
-          if (course) {
-            const daysToAdd = scheduleDays === "MWF" 
-              ? ["Monday", "Wednesday", "Friday"]
-              : scheduleDays === "TTh"
-              ? ["Tuesday", "Thursday"]
-              : scheduleDays === "MW"
-              ? ["Monday", "Wednesday"]
-              : ["Tuesday", "Friday"];
-
-            for (const day of daysToAdd) {
-              await supabase.from("timetable").insert({
-                student_id: profile.id,
-                course_id: course.id,
-                day_of_week: day,
-                start_time: startTime,
-                end_time: endTime,
-                room: subject.room,
-                title: subject.name,
-                event_type: "Lecture",
-              });
-            }
-          }
-        }
+      if (!res?.success) {
+        throw new Error(res?.error || "Failed to complete enrollment");
       }
 
       toast.success(`Successfully enrolled in ${program.name}!`);
       setEnrollDialogOpen(false);
       setSelectedProgram(null);
       setSelectedSubjects([]);
-      
-      // Refresh the page data
-      window.location.reload();
+
+      // Refresh client-side enrollment data
+      await refetch();
     } catch (error: any) {
       console.error("Enrollment error:", error);
       toast.error(error.message || "Failed to complete enrollment");
