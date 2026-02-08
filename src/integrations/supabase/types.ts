@@ -46,6 +46,87 @@ export type Database = {
           },
         ]
       }
+      admin_login_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          success: boolean
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          username?: string | null
+        }
+        Relationships: []
+      }
+      admin_security_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          session_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          session_token: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          session_token?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           content: string
@@ -833,6 +914,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_admin_security_data: { Args: never; Returns: undefined }
       get_profile_id: { Args: never; Returns: string }
       has_role: {
         Args: {

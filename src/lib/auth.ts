@@ -1,9 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
 
-// Admin credentials (updated as per requirements)
-const ADMIN_USERNAME = "zap.gateaway";
-const ADMIN_PASSWORD = "minadzap25";
-
 export interface StudentProfile {
   id: string;
   user_id: string;
@@ -23,30 +19,96 @@ export interface StudentProfile {
   updated_at: string;
 }
 
-// Admin authentication (local, no Supabase)
-export const adminLogin = (username: string, password: string): boolean => {
-  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
-};
+// ============================================================
+// ADMIN AUTHENTICATION (Server-Side Validated)
+// No credentials stored in client-side code.
+// ============================================================
 
-export const isAdminAuthenticated = (): boolean => {
-  return sessionStorage.getItem("admin_authenticated") === "true";
-};
+const ADMIN_SESSION_KEY = "admin_session_token";
 
-export const setAdminAuthenticated = (value: boolean): void => {
-  if (value) {
-    sessionStorage.setItem("admin_authenticated", "true");
-  } else {
-    sessionStorage.removeItem("admin_authenticated");
+export const adminLogin = async (
+  username: string,
+  password: string
+): Promise<{ success: boolean; error?: string; blocked?: boolean; retryAfterMinutes?: number }> => {
+  try {
+    const { data, error } = await supabase.functions.invoke("admin-auth", {
+      body: { action: "login", username, password },
+    });
+
+    if (error) {
+      return { success: false, error: "Authentication service unavailable" };
+    }
+
+    if (data?.blocked) {
+      return {
+        success: false,
+        error: data.error,
+        blocked: true,
+        retryAfterMinutes: data.retryAfterMinutes,
+      };
+    }
+
+    if (!data?.success) {
+      return { success: false, error: data?.error || "Invalid admin credentials" };
+    }
+
+    // Store secure session token (not raw credentials)
+    sessionStorage.setItem(ADMIN_SESSION_KEY, data.sessionToken);
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: "Authentication service error" };
   }
 };
 
-// Student authentication using Supabase
+export const isAdminAuthenticated = (): boolean => {
+  const token = sessionStorage.getItem(ADMIN_SESSION_KEY);
+  return !!token && token.length === 64;
+};
+
+export const getAdminSessionToken = (): string | null => {
+  return sessionStorage.getItem(ADMIN_SESSION_KEY);
+};
+
+export const validateAdminSession = async (): Promise<boolean> => {
+  const token = getAdminSessionToken();
+  if (!token) return false;
+
+  try {
+    const { data } = await supabase.functions.invoke("admin-auth", {
+      body: { action: "validate_session", sessionToken: token },
+    });
+    
+    if (!data?.valid) {
+      sessionStorage.removeItem(ADMIN_SESSION_KEY);
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const setAdminAuthenticated = (value: boolean): void => {
+  if (!value) {
+    const token = getAdminSessionToken();
+    if (token) {
+      // Invalidate session server-side (fire-and-forget)
+      supabase.functions.invoke("admin-auth", {
+        body: { action: "logout", sessionToken: token },
+      }).catch(() => {});
+    }
+    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+  }
+};
+
+// ============================================================
+// STUDENT AUTHENTICATION (Supabase Auth - unchanged)
+// ============================================================
+
 const normalizeStudentNumber = (studentNumber: string) => studentNumber.trim();
 
-// We keep email completely internal for auth. Students still login with Student Number + Password only.
 const studentAuthEmail = (studentNumber: string) => {
   const normalized = normalizeStudentNumber(studentNumber);
-  // Deterministic, unique per student_number, and does not require reading profiles before login.
   return `${normalized.toLowerCase()}@zapgateway.internal`;
 };
 
@@ -63,13 +125,11 @@ export const studentLogin = async (
     });
 
     if (authError) {
-      // Do not reveal whether student number exists.
       return { success: false, error: "Invalid student number or password" };
     }
 
     return { success: true };
   } catch (error) {
-    console.error("Login error:", error);
     return { success: false, error: "An error occurred during login" };
   }
 };
@@ -84,8 +144,6 @@ export const studentRegister = async (data: {
   course?: string;
 }): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Registration is handled server-side to avoid RLS issues and ensure
-    // student_number -> auth identity mapping is always created correctly.
     const { data: res, error } = await supabase.functions.invoke("student-register", {
       body: {
         studentNumber: normalizeStudentNumber(data.studentNumber),
@@ -108,7 +166,6 @@ export const studentRegister = async (data: {
 
     return { success: true };
   } catch (error) {
-    console.error("Registration error:", error);
     return { success: false, error: "An error occurred during registration" };
   }
 };
