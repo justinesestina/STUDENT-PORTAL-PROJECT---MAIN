@@ -2,3 +2,9 @@ project_id = "nwcjinrjclbeyhyozaxo"
 
 [functions.student-enroll-program]
 verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false
+
+[functions.admin-operations]
+verify_jwt = false

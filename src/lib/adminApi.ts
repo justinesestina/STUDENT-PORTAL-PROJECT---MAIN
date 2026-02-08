@@ -1,24 +1,26 @@
 import { supabase } from "@/integrations/supabase/client";
-
-// Get admin auth token from session
-const getAdminAuthHeader = (): string => {
-  // Encode admin credentials for API calls
-  const credentials = {
-    username: "zap.gateaway",
-    password: "minadzap25"
-  };
-  return btoa(JSON.stringify(credentials));
-};
+import { getAdminSessionToken } from "@/lib/auth";
 
 export const adminApi = async (action: string, data: any = {}) => {
+  const sessionToken = getAdminSessionToken();
+
+  if (!sessionToken) {
+    throw new Error("Admin session expired. Please login again.");
+  }
+
   const { data: result, error } = await supabase.functions.invoke("admin-operations", {
     body: { action, data },
     headers: {
-      "x-admin-auth": getAdminAuthHeader()
-    }
+      "x-admin-session": sessionToken,
+    },
   });
 
   if (error) {
+    // Check for session expiry
+    if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+      sessionStorage.removeItem("admin_session_token");
+      throw new Error("Admin session expired. Please login again.");
+    }
     throw new Error(error.message);
   }
 

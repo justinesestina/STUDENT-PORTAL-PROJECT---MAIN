@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { adminLogin, setAdminAuthenticated } from "@/lib/auth";
+import { adminLogin } from "@/lib/auth";
 import { toast } from "sonner";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import logo from "@/assets/logo.png";
@@ -15,6 +15,8 @@ const AdminLogin: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lockoutMessage, setLockoutMessage] = useState<string | null>(null);
+  const [lockoutMinutes, setLockoutMinutes] = useState<number | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,17 +26,22 @@ const AdminLogin: React.FC = () => {
       return;
     }
 
+    // Clear previous lockout message
+    setLockoutMessage(null);
+    setLockoutMinutes(null);
     setLoading(true);
     
-    // Simulate network delay for security
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    const result = await adminLogin(username.trim(), password);
     
-    if (adminLogin(username.trim(), password)) {
-      setAdminAuthenticated(true);
+    if (result.success) {
       toast.success("Admin login successful!");
       navigate("/admin/dashboard");
+    } else if (result.blocked) {
+      setLockoutMessage(result.error || "Account temporarily locked.");
+      setLockoutMinutes(result.retryAfterMinutes || null);
+      toast.error("Account locked - too many failed attempts");
     } else {
-      toast.error("Invalid admin credentials");
+      toast.error(result.error || "Invalid admin credentials");
     }
     
     setLoading(false);
@@ -71,6 +78,21 @@ const AdminLogin: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Lockout Warning Banner */}
+          {lockoutMessage && (
+            <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+              <div className="text-sm">
+                <p className="font-medium text-destructive">{lockoutMessage}</p>
+                {lockoutMinutes && (
+                  <p className="text-muted-foreground mt-1">
+                    Try again in {lockoutMinutes} minute{lockoutMinutes > 1 ? "s" : ""}.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
@@ -82,6 +104,8 @@ const AdminLogin: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-11"
                 disabled={loading}
+                maxLength={50}
+                autoComplete="username"
               />
             </div>
 
@@ -95,6 +119,8 @@ const AdminLogin: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-11"
                 disabled={loading}
+                maxLength={100}
+                autoComplete="current-password"
               />
             </div>
 
