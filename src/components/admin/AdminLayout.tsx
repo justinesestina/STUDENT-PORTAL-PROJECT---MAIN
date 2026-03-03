@@ -90,7 +90,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Logo */}
       <div className="p-4 border-b border-sidebar-border">
         <Link to="/admin/dashboard" className="flex items-center gap-3">
-          <img src={logo} alt="ZAP Gateway Academy" className="w-10 h-10 rounded-full" />
+          <img src={logo} alt="ZAP Gateway Academy" className="w-10 h-10 rounded-full object-cover" />
           <div className="flex flex-col">
             <span className="text-sm font-bold text-sidebar-foreground">ZAP GATEWAY</span>
             <div className="flex items-center gap-1">
@@ -146,7 +146,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
           <div className="flex-1 lg:hidden">
             <Link to="/admin/dashboard" className="flex items-center gap-2">
-              <img src={logo} alt="ZAP Gateway Academy" className="h-8 w-8 rounded-full" />
+              <img src={logo} alt="ZAP Gateway Academy" className="h-8 w-8 rounded-full object-cover" />
               <span className="font-bold text-sm">ZAP GATEWAY</span>
               <Badge variant="secondary" className="text-xs">Admin</Badge>
             </Link>

@@ -58,7 +58,7 @@ const Login: React.FC = () => {
             <img 
               src={logo} 
               alt="ZAP Gateway Academy" 
-              className="w-32 h-32 mb-4 drop-shadow-xl animate-fade-in rounded-full"
+              className="w-36 h-36 mb-4 drop-shadow-xl animate-fade-in rounded-full object-cover bg-background"
             />
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
               ZAP GATEWAY ACADEMY

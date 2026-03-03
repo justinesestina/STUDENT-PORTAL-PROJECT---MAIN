@@ -66,7 +66,7 @@ const AdminLogin: React.FC = () => {
             <img 
               src={logo} 
               alt="ZAP Gateway Academy" 
-              className="w-28 h-28 drop-shadow-xl rounded-full"
+              className="w-32 h-32 drop-shadow-xl rounded-full object-cover bg-background"
             />
           </div>
           <CardTitle className="text-2xl flex items-center justify-center gap-2">
