@@ -110,7 +110,7 @@ export const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
       {/* Logo */}
       <div className="p-4 border-b border-sidebar-border">
         <Link to="/dashboard" className="flex items-center gap-3">
-          <img src={logo} alt="ZAP Gateway Academy" className="w-10 h-10 rounded-full" />
+          <img src={logo} alt="ZAP Gateway Academy" className="w-10 h-10 rounded-full object-cover" />
           <div className="flex flex-col">
             <span className="text-sm font-bold text-sidebar-foreground">ZAP GATEWAY</span>
             <span className="text-xs text-sidebar-foreground/70">ACADEMY</span>
