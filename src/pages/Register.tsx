@@ -103,7 +103,7 @@ const Register: React.FC = () => {
             <img 
               src={logo} 
               alt="ZAP Gateway Academy" 
-              className="w-24 h-24 mb-4 drop-shadow-lg animate-fade-in"
+              className="w-28 h-28 mb-4 drop-shadow-xl animate-fade-in rounded-full"
             />
             <h1 className="text-2xl font-bold text-foreground tracking-tight">
               ZAP GATEWAY ACADEMY
